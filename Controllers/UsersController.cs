@@ -7,6 +7,8 @@ using FirebaseAdmin.Auth;
 using habitsbackend.Data;
 using habitsbackend.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 
 namespace habitsbackend.Controllers;
 
@@ -22,25 +24,11 @@ public class UsersController : ControllerBase
         _logger = logger;
     }
 
-    [HttpGet("{id:int}")]
-    public async Task<ActionResult> Get(string id)
-    {
-        User? user = await _context.Users.FirstOrDefaultAsync<User>(x => x.Id == id);
-
-        if(user is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(user);
-    }
-
+    [Authorize]
     [HttpPost]
-    public async Task<ActionResult> Register(string idToken)
+    public async Task<ActionResult> Register()
     {
-        FirebaseToken decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(idToken);
-        string uid = decodedToken.Uid;
-
+        string uid = User.Claims.First(x => x.Type == "id").Value;
         User? user = await _context.Users.FirstOrDefaultAsync<User>(x => x.Id == uid);     
 
         if(user is not null)
@@ -49,7 +37,15 @@ public class UsersController : ControllerBase
         }
 
         // Register user ...
-        return Ok();
+        user = new User () {
+            Id = uid,
+            Name = User.Claims.First(x => x.Type == "name").Value,
+            Email = User.Claims.First(x => x.Type == "email").Value
+        };
+        _context.Users.Add(user);
+        _context.SaveChanges();
+
+        return Ok("Registered " + user.Email);
     }
 
 }
