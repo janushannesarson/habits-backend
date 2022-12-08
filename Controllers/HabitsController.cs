@@ -51,6 +51,29 @@ public class HabitsController : ControllerBase
     }
 
     [Authorize]
+    [HttpPost]
+    [Route("{habitId:int}/entry")]
+    public async Task<IActionResult> Post(int habitId, [FromBody] Entry entry)
+    {
+        if(habitId != entry.HabitId)
+            return BadRequest("Habit id does not match entry habit id");
+
+        Habit? habit = await _context.Habits.FirstOrDefaultAsync(x => x.Id == habitId);
+
+        if(habit == null)
+            return BadRequest("Habit doesn't exist");
+        
+        string uid = User.Claims.ToList().First(x => x.Type == "id").Value;
+
+        if(uid != habit.UserId)
+            return BadRequest("Habit user id does not match authenticated user");
+        
+        await _context.AddAsync(entry);
+
+        return CreatedAtAction("Get", entry.Id, entry);
+    }
+
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> Get()
     {
