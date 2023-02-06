@@ -12,6 +12,5 @@ RUN dotnet publish -c Release -o out
 FROM mcr.microsoft.com/dotnet/aspnet:6.0
 WORKDIR /App
 COPY --from=build-env /App/out .
-COPY --from=build-env /App/habits-e62b1-firebase-adminsdk-biccy-78fab47196.json .
 
 ENTRYPOINT ["dotnet", "habitsbackend.dll"]  
